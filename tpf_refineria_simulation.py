@@ -10,8 +10,8 @@ PROD_DIARIA = 100000 # en litros
 DD = 0 #Demanda diaria
 
 #CONTROL
-DIESELF_limit_TO_RESTOCK = 100000 # en litros 
-BIODIESEL_limit_TO_RESTOCK = 100000 # en litros 
+DIESELF_limit_TO_RESTOCK = 80000 # en litros    
+BIODIESEL_limit_TO_RESTOCK = 10000 # en litros 
 
 CAPACIDAD_TANQUE_DIESEL_F = 4000000  #diesel fosil en litros
 CAPACIDAD_TANQUE_BIODIESEL =  1000000
@@ -27,7 +27,7 @@ ST_PRODUCTO_F = 0   #en litros
 
 
 #OTROS
-TF = 100 # en dias
+TF = 10000 # en dias
 DESP = 0
 HV = 999999999999999999999999999
 
@@ -100,10 +100,12 @@ def main():
                 if(ST_DIESEL_F > 0):
                     print("DIA: ", T, " se produjo diesel con 93-7(NOALEY) con ST_DF:", round(ST_DIESEL_F), " ST_BD:", round(ST_BIODIESEL) )
 
-                    PDR = round(ST_BIODIESEL / 0.07)   #aca hay algo raro
+                    if()
+                    PDR = round(ST_BIODIESEL / 0.07)
                     diesel_f_a_usar = max(PDR - ST_BIODIESEL, 0)
-                    
-                    if( ST_DIESEL_F > diesel_f_a_usar):
+                    CDNOALEY = CDNOALEY + 1
+                    CLNOALEY = CLNOALEY + PDR
+                    if(ST_DIESEL_F > diesel_f_a_usar):
                         PDR = ST_DIESEL_F / 0.93
                         biodiesel_a_usar = PDR - ST_DIESEL_F
                         ST_DIESEL_F = 0     
@@ -122,6 +124,8 @@ def main():
                 PDR = round(ST_BIODIESEL / 0.07)
                 diesel_f_a_usar = max(PDR - ST_BIODIESEL, 0)
                 
+                CDNOALEY = CDNOALEY + 1
+                CLNOALEY = CLNOALEY+ PDR
                 if( ST_DIESEL_F > diesel_f_a_usar):
                     PDR = ST_DIESEL_F / 0.93
                     biodiesel_a_usar = PDR - ST_DIESEL_F
@@ -171,9 +175,9 @@ def main():
 
     print("")
     print("Resultados:")
-    print("Promedio Dias No acuerdo a la norma (93-7) (PLPNOALEY)", PDNBP)
+    print("Porcentaje Dias No acuerdo a la norma (93-7) (PLPNOALEY)", round(PDNBP, 4), "%")
     print("Porcentaje de Dias no cumplio con Demanda Diaria(PDNOCDD)", round(PDNOCDD, 2), "%")
-    print("Promedio Litros producidos No acuerdo a la norma (93-7) (PLPNOALEY) ", PLPNOALEY)
+    print("Promedio Litros producidos No acuerdo a la norma (93-7) (PLPNOALEY) ", round(PLPNOALEY, 4))
     print("Promedio Dias con produccion insuficiente ", PDPI)
         
         
