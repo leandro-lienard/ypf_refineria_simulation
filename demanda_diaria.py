@@ -1,6 +1,7 @@
 import random
 from scipy.stats import truncnorm
 from scipy.stats import dweibull
+from scipy.stats import reciprocal
 
 
 temp_baja = {'truncnorm': {'a': -0.401155164127462,
@@ -19,7 +20,7 @@ def get_cant_pedidos_x_dia_temp_baja():
                                b= temp_baja['truncnorm']['b'],
                                loc=temp_baja['truncnorm']['loc'],
                                scale=temp_baja['truncnorm']['scale']
-                               )
+                               ) *2
     
 def get_cant_pedidos_x_dia_temp_alta():
     # Generate random numbers from the truncated normal distribution
@@ -27,9 +28,15 @@ def get_cant_pedidos_x_dia_temp_alta():
                                loc=temp_alta['dweibull']['loc'],
                                scale=temp_alta['dweibull']['scale']
                                )
+ 
+tam_pedido = {'a': 1.0133382619566778,
+  'b': 3009.740355162193,
+  'loc': 932.2596451643392,
+  'scale': 1}
     
 def get_tam_pedido():
-    return random.randint(1000, 2000)
+    # return random.randint(1000, 2000)
+    return  int(reciprocal.ppf(random.random(), a= tam_pedido['a'], b=tam_pedido['b'], loc=tam_pedido['loc'], scale=1 ))
     
 def get_demanda_diaria_temp_baja():
     cant_pedidos = get_cant_pedidos_x_dia_temp_baja()

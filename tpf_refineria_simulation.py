@@ -7,20 +7,20 @@ global TPL, TPRBiodisiel, TPRDiesel_fosil
 
 
 #DATOS
-PROD_DIARIA = 100000 # en litros
+PROD_DIARIA = 75000 # TOCAR
 DD = 0 #Demanda diaria
 
 #CONTROL
-DIESELF_limit_TO_RESTOCK = 100000 # en litros    
-BIODIESEL_limit_TO_RESTOCK = 10000 # en litros 
+CAPACIDAD_TANQUE_BIODIESEL =  200000 #NO TOCAR 
+CAPACIDAD_TANQUE_DIESEL_F = 2000000  #NO TOCAR  diesel fosil en litros o 4000 m³
+CAPACIDAD_TANQUE_PRODUCTO_FINAL =  500000 # NO TOCAR en litros
 
-CAPACIDAD_TANQUE_DIESEL_F = 4000000  #diesel fosil en litros o 4000 m³
-CAPACIDAD_TANQUE_BIODIESEL =  1000000
+BIODIESEL_limit_TO_RESTOCK = 40000 # TOCAR
+DIESELF_limit_TO_RESTOCK = 400000 # TOCAR    
 #lo producido de la refineria del diesel fosil + biodiesel
-CAPACIDAD_TANQUE_PRODUCTO_FINAL =  4000000 # en litros
 
-#ESTADO 
-ST_DIESEL_F = CAPACIDAD_TANQUE_DIESEL_F/2  #en litros
+#ESTADO #siempre asi 
+ST_DIESEL_F = CAPACIDAD_TANQUE_DIESEL_F/2  #en litros  
 ST_BIODIESEL = CAPACIDAD_TANQUE_BIODIESEL/2  #en litros
 ST_PRODUCTO_F = 0   #en litros
 
@@ -43,6 +43,7 @@ DNOCDD = 0 #Dias que no se cumplio la demanada diaria
 PDR = 0
 CDNP = 0 # Cantidad dias no produccion
 CLALEY = 0
+EXCEDENTE_PF = 0
 
 #TEF
 TPRDiesel_fosil = HV #tiempo proximo reposicicion diesel fosil
@@ -54,22 +55,21 @@ TPRBiodisiel = HV #tiempo proximo reposicicion biodiesel
 #auxs
 def llenar_tanque_diesel_f(day):
     global ST_DIESEL_F, TPRDiesel_fosil, CAPACIDAD_TANQUE_BIODIESEL
-    ST_DIESEL_F = CAPACIDAD_TANQUE_DIESEL_F #se llena
+    ST_DIESEL_F = min(CAPACIDAD_TANQUE_DIESEL_F, ST_DIESEL_F + 400000) #se llena
     TPRDiesel_fosil = HV
     print("Dia: ", day, "Recarga de compusitble Diesel Fosil al maximo", CAPACIDAD_TANQUE_DIESEL_F)
 
 
 def llenar_tanque_biodiesel(day):
     global ST_BIODIESEL, TPRBiodisiel
-    ST_BIODIESEL = CAPACIDAD_TANQUE_BIODIESEL #se llena
+    ST_BIODIESEL = min(CAPACIDAD_TANQUE_DIESEL_F, ST_BIODIESEL + 400000) #se llena
     TPRBiodisiel = HV
     print("Dia: ", day, "Recarga de compusitble Biodiesel al maximo", CAPACIDAD_TANQUE_BIODIESEL)
 
 def demanda_diaria(day):
-    if day % 365 < 60:
-        return dd.get_demanda_diaria_temp_alta()
-    else: 
-        return dd.get_demanda_diaria_temp_baja()
+    # if day % 365 < 90:
+    return dd.get_demanda_diaria_temp_alta()
+    # return dd.get_demanda_diaria_temp_baja()
 
 def get_desperdicio():
     return 0.02
@@ -99,7 +99,7 @@ def produccion_alternativa(day):
 # -------------------- INICIO SIMULACION ------------------------------------
 def main():
     global TPRBiodisiel, TPRDiesel_fosil, ST_BIODIESEL, ST_DIESEL_F, ST_PRODUCTO_F, CDALEY, CDNOALEY, CLNOALEY 
-    global CDDI, LT, DNOCDD, PDR, CLALEY
+    global CDDI, LT, DNOCDD, PDR, CLALEY, EXCEDENTE_PF
     
     T = 0
     while(T <= TF):
@@ -118,7 +118,7 @@ def main():
                 CDALEY = CDALEY + 1
                 CLALEY = CLALEY + PROD_DIARIA
                 PDR = PROD_DIARIA
-                print("DIA: ", T, " se produjo diesel con 93-7(ALEY) con ST_DF:", round(ST_DIESEL_F), " ST_BD:", round(ST_BIODIESEL) )
+                print("DIA: ", T, " se produjo diesel con 93-7(ALEY) con ST_DF:", round(ST_DIESEL_F), " ST_BD:", round(ST_BIODIESEL), "DD:", DD)
             elif(ST_DIESEL_F >= PROD_DIARIA):
                 #PRODUZCO AL 100%
                 ST_DIESEL_F = ST_DIESEL_F - PROD_DIARIA
@@ -134,14 +134,17 @@ def main():
         produccion_final = PDR - (PDR * desp)
         LT = LT + PDR        
         if(produccion_final + ST_PRODUCTO_F >= DD):
-            ST_PRODUCTO_F =  min(ST_PRODUCTO_F + produccion_final - DD, CAPACIDAD_TANQUE_PRODUCTO_FINAL) 
+            ST_PRODUCTO_F = ST_PRODUCTO_F + produccion_final - DD
+            if(ST_PRODUCTO_F  > CAPACIDAD_TANQUE_PRODUCTO_FINAL):
+                EXCEDENTE_PF += ST_PRODUCTO_F - CAPACIDAD_TANQUE_PRODUCTO_FINAL
+                ST_PRODUCTO_F = CAPACIDAD_TANQUE_PRODUCTO_FINAL
         else:
             DNOCDD = DNOCDD + 1 #no cumplio demanda diaria
             ST_PRODUCTO_F = 0
             CDDI = CDDI + 1
         
         if((ST_DIESEL_F < DIESELF_limit_TO_RESTOCK) & (TPRDiesel_fosil == HV)):
-            TPRDiesel_fosil = T + 3 # REPOSICIONES TARDAN 5 Dias    
+            TPRDiesel_fosil = T + 5 # REPOSICIONES TARDAN 5 Dias    
         
         if((ST_BIODIESEL < BIODIESEL_limit_TO_RESTOCK) & (TPRBiodisiel == HV)):
             TPRBiodisiel = T + 5
@@ -172,12 +175,13 @@ def main():
     print("* Porcentaje Dias No Produccion 0 :( ", round(CDNP/T * 100, 4), "%")
     
     # print("Porcentaje de Dias no cumplio con Demanda Diaria(PDNOCDD)", round(PDNOCDD, 2), "%")
-    print("Porcentaje Litros producidos Acuerdo a la norma (93-7) ", CLALEY , round(CLALEY/LT* 100, 2), "%")
-    print("Porcentaje Litros producidos No Acuerdo a la norma (100-0) ", CLNOALEY , round(CLNOALEY/LT * 100, 2), "%")
+    # print("Porcentaje Litros producidos Acuerdo a la norma (93-7) ", CLALEY , round(CLALEY/LT* 100, 2), "%")
+    # print("Porcentaje Litros producidos No Acuerdo a la norma (100-0) ", CLNOALEY , round(CLNOALEY/LT * 100, 2), "%")
     
-    print("Promedio Litros totales producidos mensual ", round(LT/T*30, 0), "lts", "(", LT ,")")
-    print("* Promedio Litros Acuerdo a la Ley producidos mensual ", round(CLALEY/T*30, 0), "lts", "(", CLALEY ,")")
+    # print("Promedio Litros totales producidos mensual ", round(LT/T*30, 0), "lts", "(", LT ,")")
+    # print("* Promedio Litros Acuerdo a la Ley producidos mensual ", round(CLALEY/T*30, 0), "lts", "(", CLALEY ,")")
     print("* Promedio Litros No Acuerdo a la Ley mensual ", round(CLNOALEY/T*30, 0), "lts", "(", CLNOALEY ,")")
+    print("* Promedio Litros excedentes mensual", round(EXCEDENTE_PF/T*30, 0), "lts", "(", EXCEDENTE_PF ,")")
     
     
     print("* Promedio Dias Demanda insatisfecha (producido + stock reserva) ", round(PDPI, 2), "%")
